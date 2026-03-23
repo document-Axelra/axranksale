@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>AXELRA · Sales Dashboard</title>
+<title>AXELRA · Sales Dashboard v5</title>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -231,9 +231,63 @@ a{color:var(--orange);text-decoration:none}
 @media(max-width:1100px){.kgrid{grid-template-columns:repeat(3,1fr)}.col2,.col3,.col1{flex:1 1 100%}}
 @media(max-width:700px){.kgrid{grid-template-columns:1fr 1fr}.wrap{padding:12px 10px}.hdr{padding:0 14px}.dgrid{grid-template-columns:1fr 1fr}}
 @media(max-width:440px){.kgrid{grid-template-columns:1fr}}
+
+/* ── PROGRESS BAR ──────────────────────────────────── */
+#prog-bar{position:fixed;top:0;left:0;height:3px;width:0%;background:linear-gradient(90deg,var(--orange),#ff9966,var(--orange));z-index:300;transition:width .3s ease;border-radius:0 2px 2px 0;box-shadow:0 0 8px rgba(224,108,58,0.6)}
+#prog-bar.done{width:100%;opacity:0;transition:width .3s ease,opacity .5s ease .2s}
+
+/* ── TOAST ────────────────────────────────────────── */
+#toast-stack{position:fixed;bottom:24px;right:24px;z-index:400;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none}
+.toast{padding:11px 16px;border-radius:12px;font-size:12px;font-family:var(--mono);font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(30,39,46,0.18);pointer-events:all;animation:toastIn .25s ease;backdrop-filter:blur(10px);max-width:300px;line-height:1.4}
+.toast.die{animation:toastOut .25s ease forwards}
+.toast.ok{background:rgba(46,204,113,0.95);color:#fff}
+.toast.err{background:rgba(231,76,60,0.95);color:#fff}
+.toast.info{background:rgba(30,39,46,0.95);color:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.1)}
+.toast.warn{background:rgba(243,156,18,0.95);color:#fff}
+@keyframes toastIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes toastOut{to{transform:translateX(110%);opacity:0}}
+
+/* ── SKELETON ─────────────────────────────────────── */
+.skel{background:linear-gradient(90deg,var(--surface3) 25%,var(--surface2) 50%,var(--surface3) 75%);background-size:200% 100%;animation:skelShimmer 1.4s infinite;border-radius:6px}
+@keyframes skelShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-txt{height:14px;margin:4px 0;border-radius:4px}
+.skel-val{height:28px;margin:6px 0;border-radius:4px}
+
+/* ── ANIMATED COUNTER ─────────────────────────────── */
+.kpi-val{transition:color .3s}
+.kpi-val.updated{animation:kpiPop .4s ease}
+@keyframes kpiPop{0%{transform:scale(1)}40%{transform:scale(1.1);color:var(--orange)}100%{transform:scale(1)}}
+
+/* ── REFRESH BTN SPIN ─────────────────────────────── */
+.refreshing .ref-icon{display:inline-block;animation:spin .7s linear infinite}
+
+/* ── STATUS BAR ───────────────────────────────────── */
+.sbar-wrap{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:5px 10px}
+.sbar-txt{font-size:10px;font-family:var(--mono);color:rgba(255,255,255,0.5);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── RETRY OVERLAY ────────────────────────────────── */
+.ldr-step{font-size:11px;color:var(--muted);font-family:var(--mono);text-align:center;max-width:260px;line-height:1.8}
+.ldr-attempt{font-size:10px;color:var(--orange);font-family:var(--mono)}
+
+/* ── TAB TRANSITION ─────────────────────────────────*/
+.wrap{transition:opacity .15s ease}
+.wrap.fading{opacity:.5}
+
+/* ── KPI HOVER GLOW ──────────────────────────────── */
+.kpi{cursor:default}
+.kpi.or:hover::before{content:'';position:absolute;inset:0;border-radius:var(--rl);background:radial-gradient(circle at 50% 0%,rgba(224,108,58,0.08),transparent 70%);pointer-events:none}
+
+/* ── CARD ACCENT LINE ANIMATE ────────────────────── */
+.kpi::after{transition:height .3s ease,opacity .3s}
+.kpi:hover::after{height:4px;opacity:0.8}
 </style>
 </head>
 <body>
+
+<!-- PROGRESS BAR -->
+<div id="prog-bar"></div>
+<!-- TOAST STACK -->
+<div id="toast-stack"></div>
 
 <!-- ANIMATED BLOBS -->
 <div class="blob-bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
@@ -242,7 +296,8 @@ a{color:var(--orange);text-decoration:none}
 <div class="ldr" id="ldr">
   <img src="https://i.postimg.cc/sDFy7ckm/Axelra-Global-black.png" style="height:30px;opacity:.5" onerror="this.style.display='none'"/>
   <div class="spin"></div>
-  <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">กำลังโหลด...</div>
+  <div class="ldr-step" id="ldr-step">กำลังเชื่อมต่อ Live Data...</div>
+  <div class="ldr-attempt" id="ldr-attempt"></div>
 </div>
 
 <!-- HEADER -->
@@ -259,8 +314,12 @@ a{color:var(--orange);text-decoration:none}
       <label class="toggle"><input type="checkbox" id="ctoggle" checked onchange="onCargoToggle()"/><span class="tslider"></span></label>
       <span class="cimpact on" id="cimpact">+฿106K</span>
     </div>
+    <div class="sbar-wrap">
+      <div class="ldot" id="ldot"></div>
+      <span class="sbar-txt" id="stxt">กำลังโหลด...</span>
+    </div>
     <button class="btn navy sm" onclick="openSrcMod()">🔍 แหล่งข้อมูล</button>
-    <button class="btn sm" onclick="reloadData()" title="โหลดข้อมูล live ใหม่">↻ Refresh</button>
+    <button class="btn sm" id="refBtn" onclick="reloadData()" title="โหลดข้อมูล live ใหม่"><span class="ref-icon">↻</span> Refresh</button>
   </div>
 </div>
 
@@ -479,39 +538,145 @@ function onCargoToggle(){
   renderAll();
 }
 
+// ════ TOAST ════════════════════════════════════════════
+function showToast(msg,type='info',dur=3500){
+  const s=document.getElementById('toast-stack');
+  const el=document.createElement('div');
+  el.className='toast '+type;
+  const ico={ok:'✅',err:'❌',info:'ℹ️',warn:'⚠️'}[type]||'•';
+  el.innerHTML=`<span>${ico}</span><span>${msg}</span>`;
+  s.appendChild(el);
+  setTimeout(()=>{el.classList.add('die');setTimeout(()=>el.remove(),300);},dur);
+}
+
+// ════ PROGRESS ══════════════════════════════════════════
+let progTimer=null;
+function setProgress(pct,done=false){
+  const bar=document.getElementById('prog-bar');
+  if(done){bar.classList.add('done');setTimeout(()=>{bar.style.width='0%';bar.classList.remove('done');},800);}
+  else{bar.style.width=pct+'%';}
+}
+
 // ════ LOAD ═══════════════════════════════════════════════
 const GAS_URL='https://script.google.com/macros/s/AKfycby-b2IdbfnyIc97NC1u1qmf2KovVv825sLwQo9cH0PfnWSpa3Ad4azhMvCfpgBhrVBy/exec';
+const MAX_RETRIES=3;
+const FETCH_TIMEOUT=25000;
+
 async function reloadData(){
+  const btn=document.getElementById('refBtn');
+  if(btn)btn.classList.add('refreshing');
   showLdr(true);
-  setSt('loading','กำลังโหลดข้อมูล live...');
-  try{
-    // 5 second timeout
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),5000);
-    const resp=await fetch(GAS_URL+'?action=getRecords&_='+Date.now(),{signal:controller.signal});
-    clearTimeout(timer);
-    const text=await resp.text();
+  setProgress(5);
+
+  for(let attempt=1;attempt<=MAX_RETRIES;attempt++){
+    setSt('loading','กำลังเชื่อมต่อ... ('+attempt+'/'+MAX_RETRIES+')');
+    setLdrStep('กำลังดึงข้อมูลจาก Google Sheets...', attempt>1?'ลองใหม่ครั้งที่ '+attempt+'/'+MAX_RETRIES:'');
+    setProgress(10 + attempt*15);
+
     try{
-      const j=JSON.parse(text);
-      if(j.success&&Array.isArray(j.data)){
-        allRecs=j.data;
-        setSt('on','Live · '+j.data.length+' records · '+new Date().toLocaleTimeString('th-TH'));
-        showLdr(false);renderAll();return;
+      const ctrl=new AbortController();
+      const timer=setTimeout(()=>ctrl.abort(),FETCH_TIMEOUT);
+      const resp=await fetch(
+        GAS_URL+'?action=getRecords&t='+Date.now(),
+        {signal:ctrl.signal, redirect:'follow', cache:'no-store'}
+      );
+      clearTimeout(timer);
+      setProgress(65);
+
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const text=await resp.text();
+      setProgress(80);
+
+      // Try JSON parse
+      try{
+        const j=JSON.parse(text);
+        if(j.success&&Array.isArray(j.data)&&j.data.length>0){
+          allRecs=j.data;
+          const src=j.source||{};
+          setSt('on','🟢 Live · '+allRecs.length+' records · '+new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}));
+          setProgress(100,true);
+          showToast('โหลด Live Data สำเร็จ · '+allRecs.length+' รายการ','ok');
+          showLdr(false);
+          if(btn)btn.classList.remove('refreshing');
+          renderAll();
+          return;
+        }else{
+          throw new Error(j.message||'data empty');
+        }
+      }catch(pe){
+        // Try CSV fallback
+        const parsed=parseCSV(text);
+        if(parsed.length>2){
+          allRecs=csvToRecs(parsed);
+          setSt('on','📄 Live CSV · '+allRecs.length+' records');
+          setProgress(100,true);
+          showToast('โหลด CSV สำเร็จ · '+allRecs.length+' รายการ','ok');
+          showLdr(false);
+          if(btn)btn.classList.remove('refreshing');
+          renderAll();
+          return;
+        }
+        throw new Error('parse failed: '+pe.message);
       }
-    }catch{}
-    const parsed=parseCSV(text);
-    if(parsed.length>2){allRecs=csvToRecs(parsed);setSt('on','Live CSV · '+allRecs.length+' records');showLdr(false);renderAll();return;}
-    throw new Error('empty');
-  }catch(e){
-    console.warn('Live failed:',e.message);
-    useFallback();
+    }catch(e){
+      console.warn(`Attempt ${attempt} failed:`,e.message);
+      if(attempt<MAX_RETRIES){
+        setLdrStep('ไม่ตอบสนอง — รอสักครู่...','ลองใหม่ใน 3 วินาที ('+attempt+'/'+MAX_RETRIES+')');
+        await new Promise(r=>setTimeout(r,3000));
+      }
+    }
   }
+
+  // All retries failed — use fallback
+  console.warn('All retries failed, using embedded data');
+  useFallback();
+  if(btn)btn.classList.remove('refreshing');
 }
-function useFallback(){allRecs=ALL_RAW;setSt('off','ข้อมูลสำรอง · '+allRecs.length+' records');showLdr(false);renderAll();}
-function setSt(m,t){const d=document.getElementById('ldot');d.className='ldot'+(m==='on'?' on':m==='loading'?' loading':'');document.getElementById('stxt').textContent=t;}
+
+function useFallback(){
+  allRecs=ALL_RAW;
+  setSt('off','📦 ข้อมูลสำรอง · '+allRecs.length+' records');
+  setProgress(100,true);
+  showToast('ไม่สามารถเชื่อมต่อ Live — ใช้ข้อมูลสำรองแทน','warn',5000);
+  showLdr(false);
+  renderAll();
+}
+
+function setLdrStep(msg,sub=''){
+  const s=document.getElementById('ldr-step');
+  const a=document.getElementById('ldr-attempt');
+  if(s)s.textContent=msg;
+  if(a)a.textContent=sub;
+}
+function setSt(m,t){
+  const d=document.getElementById('ldot');
+  if(!d)return;
+  d.className='ldot'+(m==='on'?' on':m==='loading'?' loading':'');
+  const el=document.getElementById('stxt');
+  if(el)el.textContent=t;
+}
 function showLdr(on){document.getElementById('ldr').classList.toggle('hidden',!on);}
 function parseCSV(t){return t.split('\n').map(l=>{const r=[];let q=false,c='';for(let i=0;i<l.length;i++){const ch=l[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c);c='';}else c+=ch;}r.push(c);return r;});}
 function csvToRecs(rows){return rows.slice(1).filter(r=>r[0]).map(r=>{const l=parseFloat(r[48])||0,cu=parseFloat(r[50])||0,d=parseFloat(r[52])||0;const s=(r[9]||'').trim();return{date:r[0]?.slice(0,10)||'',memberId:r[1]||'',shipment:r[3]||'',invoice:r[5]||'',agent:r[6]||'',company:r[7]||'',type:(r[8]||'').replace(/\n/g,' '),sales:(!s||s==='NONE')?'NONE':s,pricing:r[10]||'',customer:r[16]||'',product:r[17]||'',exim:r[21]||'',term:r[22]||'',size:r[23]||'',addService:r[24]||'',pod:r[25]||'',status:r[27]||'',payType:r[15]||'',saleLCL:l,saleCustoms:cu,saleDoc:d,totalSale:l+cu+d,commission:parseFloat(r[54])||0};});}
+
+// ════ ANIMATED COUNTER ═══════════════════════════════════
+function animateNum(elId,target,prefix='฿',dur=550){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  const from=parseInt((el.dataset.rawVal||'0').replace(/\D/g,''))||0;
+  el.dataset.rawVal=String(target);
+  const diff=target-from;
+  if(Math.abs(diff)<1){el.textContent=prefix+fmt(target);return;}
+  const start=performance.now();
+  const ease=t=>1-Math.pow(1-t,3);
+  requestAnimationFrame(function step(now){
+    const p=Math.min(1,(now-start)/dur);
+    const cur=Math.round(from+diff*ease(p));
+    el.textContent=prefix+fmt(cur);
+    if(p<1)requestAnimationFrame(step);
+    else{el.textContent=prefix+fmt(target);el.classList.add('updated');}
+  });
+}
 
 // ════ RENDER ALL ═════════════════════════════════════════
 function renderAll(){
@@ -547,14 +712,15 @@ function renderKPIs(recs){
   const ws=recs.filter(r=>r.totalSale>0).length;
   const pct=recs.length?Math.round(ws/recs.length*100):0;
   const sA=agg(recs.filter(r=>r.sales!=='NONE'&&r.sales),'sales');
-  document.getElementById('k1').textContent='฿'+fmt(total);
+  // Animated KPI values
+  animateNum('k1',total,'฿');
   document.getElementById('k1s').textContent=activeM==='ALL'?'รวม ธ.ค.68 – มี.ค.69':(MO[activeM]||activeM);
   const cb=document.getElementById('cbadge');cb.className='cbadge '+(cargoOn?'inc':'exc');cb.textContent=cargoOn?'รวม Cargo':'ไม่รวม Cargo';
-  document.getElementById('k2').textContent=recs.length.toLocaleString();
+  animateNum('k2',recs.length,'');
   document.getElementById('k2s').textContent=ws+' มียอด / '+recs.length+' ทั้งหมด';
-  document.getElementById('k3').textContent=pct+'%';
+  const k3=document.getElementById('k3');k3.dataset.rawVal='0';k3.textContent=pct+'%';
   document.getElementById('k3s').textContent=ws+' จาก '+recs.length+' รายการ';
-  document.getElementById('k4').textContent='฿'+fmt(comm);
+  animateNum('k4',comm,'฿');
   document.getElementById('k4s').textContent=total>0?(comm/total*100).toFixed(1)+'% ของยอดขาย':'–';
   if(sA.length){document.getElementById('k5').textContent=sA[0][0];document.getElementById('k5s').textContent='฿'+fmt(sA[0][1].total)+' · '+sA[0][1].shipments+' งาน';}
   document.getElementById('tabsum').textContent=recs.length+' รายการ · ฿'+fmtK(total);
@@ -854,7 +1020,7 @@ function openSalesMod(n){
   openMod(n,recs.length+' Shipment · '+(activeM==='ALL'?'ทุกเดือน':(MO[activeM]||activeM)),
     `<div class="msec"><h3>สรุปยอด</h3><div class="dgrid">
       <div class="ditem" style="border-top:3px solid ${c}"><div class="dlabel">ยอดขายรวม</div><div class="dval big" style="color:${c}">฿${fmt(total)}</div></div>
-      <div class="ditem"><div class="dlabel">จำนวนงาน</div><div class="dval big" style="color:var(--navy)">฿{recs.length}</div></div>
+      <div class="ditem"><div class="dlabel">จำนวนงาน</div><div class="dval big" style="color:var(--navy)">${recs.length}</div></div>
       <div class="ditem"><div class="dlabel">Commission</div><div class="dval big or">฿${fmt(comm)}</div></div>
       <div class="ditem"><div class="dlabel">LCL [col48]</div><div class="dval">฿${fmt(lcl)}</div></div>
       <div class="ditem"><div class="dlabel">Customs [col50]</div><div class="dval">฿${fmt(cu)}</div></div>
@@ -865,8 +1031,6 @@ function openSalesMod(n){
     ).join('')}</div>
     <div class="msec"><h3>Shipment ทั้งหมด (${recs.length}) — คลิกดูรายละเอียด</h3>${shiptbl(recs)}</div>`
   );
-  // Fix typo in above
-  document.getElementById('mbody').innerHTML = document.getElementById('mbody').innerHTML.replace('฿{recs.length}', recs.length);
 }
 
 function openCustMod(n){
@@ -941,10 +1105,16 @@ function openShipMod(sn){
 // ════ TABS ════════════════════════════════════════════════
 document.getElementById('tabs').addEventListener('click',e=>{
   const t=e.target.closest('[data-m]');if(!t)return;
+  const prev=activeM;
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   t.classList.add('active');activeM=t.dataset.m;
+  if(prev===activeM)return;
+  const wrap=document.querySelector('.wrap');
+  wrap.classList.add('fading');
   if(charts.mon){charts.mon.destroy();delete charts.mon;}
-  renderAll();
+  setTimeout(()=>{renderAll();wrap.classList.remove('fading');},120);
+  const label=activeM==='ALL'?'ทุกเดือน':(MO[activeM]||activeM);
+  showToast('ดูข้อมูล: '+label,'info',1800);
 });
 
 // ════ INIT ════════════════════════════════════════════════
