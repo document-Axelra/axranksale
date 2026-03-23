@@ -98,8 +98,8 @@ a{color:var(--orange);text-decoration:none}
 .cfg-inp:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(224,108,58,0.1)}
 
 /* ── WRAP ──────────────────────────────────────────────── */
-.wrap{max-width:1400px;margin:0 auto;padding:28px 18px 40px}
-.row{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.wrap{max-width:1400px;margin:0 auto;padding:72px 18px 40px}
+.row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
 .row>.card{min-width:0}
 .col2{flex:2}.col3{flex:3}.col1{flex:1}
 
@@ -127,8 +127,8 @@ a{color:var(--orange);text-decoration:none}
 .cbadge.exc{background:var(--green-bg);color:var(--green)}
 
 /* ── CARDS ──────────────────────────────────────────────── */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;box-shadow:var(--sh);backdrop-filter:blur(8px)}
-.ctitle{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;box-shadow:var(--sh);backdrop-filter:blur(8px)}
+.ctitle{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-family:var(--mono);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
 .ctitle .cr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 
 /* ── RANK ──────────────────────────────────────────────── */
@@ -219,6 +219,8 @@ a{color:var(--orange);text-decoration:none}
 /* ── STATUS ─────────────────────────────────────────────── */
 .ldot{width:7px;height:7px;border-radius:50%;background:var(--hint);flex-shrink:0;transition:all .3s}
 .ldot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.ldot.loading{background:var(--orange);animation:pulse .8s infinite alternate}
+@keyframes pulse{to{opacity:.3}}
 
 /* ── LEGEND CHIPS ────────────────────────────────────────── */
 .chart-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
@@ -258,20 +260,11 @@ a{color:var(--orange);text-decoration:none}
       <span class="cimpact on" id="cimpact">+฿106K</span>
     </div>
     <button class="btn navy sm" onclick="openSrcMod()">🔍 แหล่งข้อมูล</button>
-    <button class="btn sm" onclick="reloadData()">↻ โหลดใหม่</button>
+    <button class="btn sm" onclick="reloadData()" title="โหลดข้อมูล live ใหม่">↻ Refresh</button>
   </div>
 </div>
 
 <div class="wrap">
-<div class="cfg">
-  <label>Live URL:</label>
-  <input class="cfg-inp" id="apiurl" placeholder="Apps Script Web App URL หรือ Publish-to-web CSV URL..."/>
-  <button class="btn primary" onclick="reloadData()">โหลด Live</button>
-  <button class="btn" onclick="useFallback()">ข้อมูลสำรอง</button>
-  <span style="font-size:11px;color:var(--muted);font-family:var(--mono);display:flex;align-items:center;gap:5px">
-    <span class="ldot" id="ldot"></span><span id="stxt">–</span>
-  </span>
-</div>
 
 <div id="cnotice" style="display:none" class="cnotice">
   ⚠️ ยอดไม่รวม EK CARGO + SEA CARGO — งาน Cargo คำนวณจากน้ำหนัก ยอดสูงผิดปกติ
@@ -326,7 +319,7 @@ a{color:var(--orange);text-decoration:none}
       ยอดขายรายเดือน (THB)
       <div class="cr"><span style="font-size:12px;color:var(--orange);font-family:var(--kanit);font-weight:700" id="montot"></span></div>
     </div>
-    <div style="position:relative;height:200px"><canvas id="cmon"></canvas></div>
+    <div style="position:relative;height:240px"><canvas id="cmon"></canvas></div>
   </div>
   <div class="card col1" style="min-width:270px">
     <div class="ctitle">🏆 RANK SALES <span style="font-size:10px;color:var(--hint)">คลิกดูรายละเอียด</span></div>
@@ -339,7 +332,7 @@ a{color:var(--orange);text-decoration:none}
   <div class="card col1" style="min-width:210px">
     <div class="ctitle">ประเภทงาน<div class="cr"><span style="font-size:11px;color:var(--orange);font-family:var(--mono)" id="typetot"></span></div></div>
     <div id="typelist"></div>
-    <div style="position:relative;height:150px;margin-top:12px"><canvas id="ctype"></canvas></div>
+    <div style="position:relative;height:170px;margin-top:8px"><canvas id="ctype"></canvas></div>
     <div class="chart-legend" id="type-legend"></div>
   </div>
   <div class="card col1" style="min-width:190px">
@@ -348,7 +341,7 @@ a{color:var(--orange);text-decoration:none}
   </div>
   <div class="card col2">
     <div class="ctitle">ยอดแยก Sales รายเดือน<span id="stnote" style="font-size:10px;color:var(--hint);margin-left:6px"></span></div>
-    <div style="position:relative;height:190px"><canvas id="cstk"></canvas></div>
+    <div style="position:relative;height:240px"><canvas id="cstk"></canvas></div>
     <div class="chart-legend" id="stk-legend"></div>
   </div>
 </div>
@@ -487,21 +480,35 @@ function onCargoToggle(){
 }
 
 // ════ LOAD ═══════════════════════════════════════════════
+const GAS_URL='https://script.google.com/macros/s/AKfycby-b2IdbfnyIc97NC1u1qmf2KovVv825sLwQo9cH0PfnWSpa3Ad4azhMvCfpgBhrVBy/exec';
 async function reloadData(){
-  const url=document.getElementById('apiurl').value.trim();
-  if(!url){useFallback();return;}
   showLdr(true);
+  setSt('loading','กำลังโหลดข้อมูล live...');
   try{
-    const resp=await fetch(url);const text=await resp.text();
-    try{const j=JSON.parse(text);if(j.success&&Array.isArray(j.data)){allRecs=j.data;setSt('on','Live GAS · '+j.data.length+' records');showLdr(false);renderAll();return;}}catch{}
+    // 5 second timeout
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),5000);
+    const resp=await fetch(GAS_URL+'?action=getRecords&_='+Date.now(),{signal:controller.signal});
+    clearTimeout(timer);
+    const text=await resp.text();
+    try{
+      const j=JSON.parse(text);
+      if(j.success&&Array.isArray(j.data)){
+        allRecs=j.data;
+        setSt('on','Live · '+j.data.length+' records · '+new Date().toLocaleTimeString('th-TH'));
+        showLdr(false);renderAll();return;
+      }
+    }catch{}
     const parsed=parseCSV(text);
-    if(parsed.length>2){allRecs=csvToRecs(parsed);setSt('on','Live CSV · '+allRecs.length+' records');}
-    else throw new Error('empty');
-  }catch(e){console.warn(e);useFallback();return;}
-  showLdr(false);renderAll();
+    if(parsed.length>2){allRecs=csvToRecs(parsed);setSt('on','Live CSV · '+allRecs.length+' records');showLdr(false);renderAll();return;}
+    throw new Error('empty');
+  }catch(e){
+    console.warn('Live failed:',e.message);
+    useFallback();
+  }
 }
 function useFallback(){allRecs=ALL_RAW;setSt('off','ข้อมูลสำรอง · '+allRecs.length+' records');showLdr(false);renderAll();}
-function setSt(m,t){document.getElementById('ldot').className='ldot'+(m==='on'?' on':'');document.getElementById('stxt').textContent=t;}
+function setSt(m,t){const d=document.getElementById('ldot');d.className='ldot'+(m==='on'?' on':m==='loading'?' loading':'');document.getElementById('stxt').textContent=t;}
 function showLdr(on){document.getElementById('ldr').classList.toggle('hidden',!on);}
 function parseCSV(t){return t.split('\n').map(l=>{const r=[];let q=false,c='';for(let i=0;i<l.length;i++){const ch=l[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c);c='';}else c+=ch;}r.push(c);return r;});}
 function csvToRecs(rows){return rows.slice(1).filter(r=>r[0]).map(r=>{const l=parseFloat(r[48])||0,cu=parseFloat(r[50])||0,d=parseFloat(r[52])||0;const s=(r[9]||'').trim();return{date:r[0]?.slice(0,10)||'',memberId:r[1]||'',shipment:r[3]||'',invoice:r[5]||'',agent:r[6]||'',company:r[7]||'',type:(r[8]||'').replace(/\n/g,' '),sales:(!s||s==='NONE')?'NONE':s,pricing:r[10]||'',customer:r[16]||'',product:r[17]||'',exim:r[21]||'',term:r[22]||'',size:r[23]||'',addService:r[24]||'',pod:r[25]||'',status:r[27]||'',payType:r[15]||'',saleLCL:l,saleCustoms:cu,saleDoc:d,totalSale:l+cu+d,commission:parseFloat(r[54])||0};});}
@@ -573,7 +580,7 @@ function renderMonthly(){
     data:{labels,datasets:[{data:vals,backgroundColor:colors,borderColor:bC,borderWidth:1.5,borderRadius:8,borderSkipped:false}]},
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'฿'+fmt(c.raw)+' · '+ships[c.dataIndex]+' งาน'},backgroundColor:'rgba(30,39,46,0.9)',titleColor:'#fff',bodyColor:'rgba(255,255,255,0.8)',cornerRadius:8,padding:10}},
+      layout:{padding:{top:4,bottom:0,left:0,right:4}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'฿'+fmt(c.raw)+' · '+ships[c.dataIndex]+' งาน'},backgroundColor:'rgba(30,39,46,0.9)',titleColor:'#fff',bodyColor:'rgba(255,255,255,0.8)',cornerRadius:8,padding:10}},
       scales:{
         x:{grid:{display:false},ticks:{color:'#808E9B',font:{size:11,family:'IBM Plex Mono'}}},
         y:{grid:{color:'rgba(30,39,46,0.06)'},border:{display:false},ticks:{color:'#808E9B',font:{size:10,family:'IBM Plex Mono'},callback:v=>v>=1000?(v/1000)+'K':v}}
@@ -698,7 +705,7 @@ function renderStacked(){
     data:{labels,datasets:ds},
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{
+      layout:{padding:{top:4,bottom:0,left:0,right:4}},plugins:{
         legend:{display:false},
         tooltip:{
           callbacks:{label:c=>`${c.dataset.label}: ฿${fmt(c.raw)}`},
@@ -941,7 +948,7 @@ document.getElementById('tabs').addEventListener('click',e=>{
 });
 
 // ════ INIT ════════════════════════════════════════════════
-useFallback();
+reloadData();
 </script>
 </body>
 </html>
